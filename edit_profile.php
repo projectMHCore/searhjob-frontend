@@ -1,11 +1,9 @@
 <?php
-// Страница редактирования профиля пользователя
 session_start();
 
 require_once __DIR__ . '/../backend/config/db.php';
 require_once __DIR__ . '/../backend/models/User.php';
 
-// Проверяем авторизацию
 if (!isset($_SESSION['token'])) {
     header('Location: login.php');
     exit;
@@ -19,12 +17,10 @@ if (!$userData) {
     exit;
 }
 
-// Определяем тип редактирования
-$editType = $_GET['type'] ?? 'full'; // full, personal, company
+$editType = $_GET['type'] ?? 'full'; 
 $message = '';
 $success = false;
 
-// Получаем текущие данные профиля из базы данных
 $config = require __DIR__ . '/../backend/config/db.php';
 $db = new mysqli($config['host'], $config['username'], $config['password'], $config['database']);
 
@@ -32,19 +28,16 @@ if ($db->connect_error) {
     die("Ошибка подключения: " . $db->connect_error);
 }
 
-// Получаем текущие данные пользователя
 $userId = intval($userData['id']);
 $result = $db->query("SELECT * FROM users WHERE id = $userId");
 $currentData = $result->fetch_assoc();
 
-// Обработка формы
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $updates = [];
         $params = [];
         $types = '';
         
-        // Общие поля
         if (!empty($_POST['first_name'])) {
             $updates[] = "first_name = ?";
             $params[] = trim($_POST['first_name']);
@@ -75,7 +68,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $types .= 's';
         }
         
-        // Поля для соискателей
         if ($userData['role'] === 'job_seeker') {
             if (isset($_POST['experience_years']) && $_POST['experience_years'] !== '') {
                 $updates[] = "experience_years = ?";
@@ -108,7 +100,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         
-        // Поля для работодателей
         if ($userData['role'] === 'employer') {
             if (!empty($_POST['company_name'])) {
                 $updates[] = "company_name = ?";
@@ -159,7 +150,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $success = true;
                     $message = 'Профіль успішно оновлено!';
                     
-                    // Оновлюємо дані для відображення
                     $result = $db->query("SELECT * FROM users WHERE id = $userId");
                     $currentData = $result->fetch_assoc();
                 } else {
@@ -191,9 +181,235 @@ $db->close();
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">    
-    <style>
-        /* Page-specific styles for profile editing */
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">      <style>        /* Base styles and theme variables */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #e2e8f0;
+            --text-primary: #2c3e50;
+            --text-secondary: #64748b;
+            --text-light: #94a3b8;
+            --border-color: #e1e8ed;
+            --shadow: rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--bg-primary);
+            overflow-x: hidden;
+            position: relative;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a202c;
+            --bg-secondary: #2d3748;
+            --bg-tertiary: #4a5568;
+            --text-primary: #ffffff;
+            --text-secondary: #cbd5e0;
+            --text-light: #a0aec0;
+            --border-color: #4a5568;
+            --shadow: rgba(0,0,0,0.3);
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+
+        [data-theme="dark"] .navbar {
+            background: rgba(26, 32, 44, 0.95);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #eaa850;
+            text-decoration: none;
+        }
+
+        .nav-menu {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            color: #2c3e50;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+        }
+
+        .nav-link:hover {
+            color: #eaa850;
+            background: rgba(234, 168, 80, 0.1);
+            transform: translateY(-2px);
+        }
+
+        [data-theme="dark"] .nav-link {
+            color: var(--text-primary);
+        }
+
+        .nav-auth {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 2px solid #e1e8ed;
+            color: #2c3e50;
+            padding: 0.5rem;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle:hover {
+            border-color: #eaa850;
+            color: #eaa850;
+            transform: scale(1.1);
+        }
+
+        [data-theme="dark"] .theme-toggle {
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #eaa850, #d4922a);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(234, 168, 80, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(234, 168, 80, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #2c3e50;
+            border: 2px solid #e1e8ed;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            border-color: #eaa850;
+            color: #eaa850;
+            transform: translateY(-2px);
+        }
+
+        [data-theme="dark"] .btn-secondary {
+            color: var(--text-primary);
+            border-color: var(--border-color);
+        }
+
+        .main-content {
+            margin-top: 80px;
+            min-height: calc(100vh - 80px);
+            padding: 2rem 0;
+        }
+
+        .section-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .footer {
+            background: #1a202c;
+            color: white;
+            padding: 60px 0 30px;
+        }
+
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .footer-section h4 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #eaa850;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.75rem;
+        }
+
+        .footer-links a {
+            color: #a0aec0;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: #eaa850;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid #2d3748;
+            padding-top: 2rem;
+            text-align: center;
+            color: #a0aec0;
+        }
+
         .edit-profile-container {
             max-width: 1000px;
             margin: 0 auto;
@@ -239,7 +455,6 @@ $db->close();
             border-bottom: 2px solid var(--primary-orange);
         }
         
-        /* Form styles override */
         .form-grid {
             display: grid;
             gap: 1.5rem;
@@ -256,7 +471,6 @@ $db->close();
             display: block;
         }
         
-        /* Mobile responsive */
         @media (max-width: 768px) {
             .edit-profile-container {
                 padding: 1rem;
@@ -274,7 +488,6 @@ $db->close();
                 grid-template-columns: 1fr;
             }        }
         
-        /* Исправление стилей для корректного отображения */
         .navbar {
             border-bottom: 1px solid var(--border-color);
             position: fixed;
@@ -357,7 +570,6 @@ $db->close();
             transform: scale(1.1);
         }
 
-        /* Main Content */
         .main-content {
             margin-top: 80px;
             min-height: calc(100vh - 80px);
@@ -401,7 +613,7 @@ $db->close();
             font-size: 1.1rem;
             opacity: 0.9;
             position: relative;
-        }        /* Form Styles */
+        }
         .edit-form {
             max-width: 100%;
             margin: 0 auto;
@@ -491,7 +703,6 @@ $db->close();
             margin-top: 0.25rem;
         }
 
-        /* Buttons */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -544,7 +755,6 @@ $db->close();
             transform: translateY(-1px);
         }
 
-        /* Alerts */
         .message {
             padding: 1rem 1.5rem;
             border-radius: var(--border-radius);
@@ -591,7 +801,6 @@ $db->close();
             font-size: 1rem;
         }
 
-        /* Mobile Menu */
         .mobile-menu-btn {
             display: none;
             background: none;
@@ -601,7 +810,6 @@ $db->close();
             color: var(--text-primary);
         }
 
-        /* Responsive Design */
         @media (max-width: 768px) {
             .nav-container {
                 padding: 1rem;
@@ -655,7 +863,6 @@ $db->close();
             }
         }
 
-        /* Animations */
         @keyframes fadeInUp {
             from {
                 opacity: 0;
@@ -680,34 +887,54 @@ $db->close();
         }
     </style>
 </head>
-<body>
-    <!-- Navigation -->
+<body>    <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
-            <a href="/frontend/index.php" class="nav-logo">SearchJob</a>
+            <a href="/frontend/index.php" class="nav-brand">
+                <i class="fas fa-briefcase"></i>
+                SearchJob
+            </a>
             
-            <ul class="nav-menu">
-                <li><a href="/frontend/index.php" class="nav-link">Головна</a></li>
-                <li><a href="/frontend/vacancy_list.php" class="nav-link">Вакансії</a></li>
-                <li><a href="/frontend/companies_list.php" class="nav-link">Компанії</a></li>
-                <li><a href="/frontend/profile.php" class="nav-link active">Профіль</a></li>
+            <div class="nav-menu">
+                <a href="/frontend/index.php" class="nav-link">
+                    <i class="fas fa-home"></i>
+                    Головна
+                </a>
+                <a href="/frontend/vacancy_list.php" class="nav-link">
+                    <i class="fas fa-search"></i>
+                    Вакансії
+                </a>
+                <a href="/frontend/companies_list.php" class="nav-link">
+                    <i class="fas fa-building"></i>
+                    Компанії
+                </a>
                 <?php if ($userData['role'] === 'employer'): ?>
-                    <li><a href="/frontend/my_vacancies.php" class="nav-link">Мої вакансії</a></li>
+                    <a href="/frontend/my_vacancies.php" class="nav-link">
+                        <i class="fas fa-list"></i>
+                        Мої вакансії
+                    </a>
+                <?php elseif ($userData['role'] === 'jobseeker'): ?>
+                    <a href="/frontend/my_applications.php" class="nav-link">
+                        <i class="fas fa-file-alt"></i>
+                        Мої заявки
+                    </a>
                 <?php endif; ?>
-            </ul>
+            </div>
             
-            <div style="display: flex; align-items: center; gap: 1rem;">
-                <button class="theme-toggle" onclick="toggleTheme()" aria-label="Переключити тему">
-                    <span class="theme-icon">🌙</span>
+            <div class="nav-auth">
+                <button id="theme-toggle" class="theme-toggle" title="Переключити тему">
+                    <i class="fas fa-moon"></i>
                 </button>
-                <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+                <a href="/frontend/profile.php" class="nav-link">
+                    <i class="fas fa-user"></i>
+                    Профіль
+                </a>
+                <a href="/frontend/logout.php" class="btn-secondary">Вихід</a>
             </div>
         </div>
-    </nav>
-
-    <!-- Main Content -->
+    </nav>    <!-- Main Content -->
     <main class="main-content">
-        <div class="container">
+        <div class="section-container">
             <!-- Page Header -->
             <div class="page-header">
                 <?php
@@ -732,7 +959,12 @@ $db->close();
                 </div>
             <?php endif; ?>            <!-- Edit Form -->
             <form method="post" class="edit-form">
-                <?php if ($editType === 'full' || $editType === 'personal'): ?>
+                <?php if ($editType === 'full' || $editType === 'personal'): ?>                <!-- Avatar Upload Section -->
+                <div class="form-section">
+                    <h3>📷 Фото профілю</h3>
+                    <?php include __DIR__ . '/components/avatar_upload.php'; ?>
+                </div>
+                
                 <!-- Personal Information Section -->
                 <div class="form-section">
                     <h3>👤 Особиста інформація</h3>
@@ -818,12 +1050,22 @@ $db->close();
                 <!-- Company Information Section -->
                 <div class="form-section">
                     <h3>🏢 Інформація про компанію</h3>
-                    
-                    <div class="form-group">
+                      <div class="form-group">
                         <label for="company_name">Назва компанії</label>
                         <input type="text" id="company_name" name="company_name" 
                                value="<?= htmlspecialchars($currentData['company_name'] ?? '') ?>"
                                placeholder="Введіть назву компанії">
+                    </div>
+                    
+                    <!-- Company Logo Section -->
+                    <div class="form-group">
+                        <label>Логотип компанії</label>
+                        <div class="logo-upload-section">
+                            <?php
+                            $userData = $currentData;
+                            include __DIR__ . '/components/company_logo_upload.php';
+                            ?>
+                        </div>
                     </div>
                     
                     <div class="form-group">
@@ -890,156 +1132,235 @@ $db->close();
                 <?php endif; ?>
             </form>
         </div>
-    </main>
-
-    <!-- Footer -->
-    <footer style="background: var(--surface-color); border-top: 1px solid var(--border-color); margin-top: 4rem; padding: 3rem 0;">
-        <div style="max-width: 1200px; margin: 0 auto; padding: 0 2rem;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
-                <div>
-                    <h3 style="color: var(--primary-color); margin-bottom: 1rem; font-size: 1.25rem;">SearchJob</h3>
-                    <p style="color: var(--text-secondary); line-height: 1.6;">Знайдіть роботу своєї мрії або ідеального кандидата. Ми поєднуємо талановитих людей з кращими можливостями.</p>
+    </main>    <!-- Footer -->
+    <footer class="footer">
+        <div class="section-container">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <h4>SearchJob</h4>
+                    <p style="color: #a0aec0; margin-bottom: 1.5rem;">
+                        Провідна платформа для пошуку роботи в Україні
+                    </p>
+                    <div style="display: flex; gap: 1rem;">
+                        <a href="#" style="color: #eaa850; font-size: 1.25rem;">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" style="color: #eaa850; font-size: 1.25rem;">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                        <a href="#" style="color: #eaa850; font-size: 1.25rem;">
+                            <i class="fab fa-telegram-plane"></i>
+                        </a>
+                        <a href="#" style="color: #eaa850; font-size: 1.25rem;">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                    </div>
                 </div>
                 
-                <div>
-                    <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Для соискателей</h4>
-                    <ul style="list-style: none; color: var(--text-secondary);">
-                        <li style="margin-bottom: 0.5rem;"><a href="/frontend/vacancy_list.php" style="color: inherit; text-decoration: none;">Пошук вакансій</a></li>
-                        <li style="margin-bottom: 0.5rem;"><a href="/frontend/companies_list.php" style="color: inherit; text-decoration: none;">Компанії</a></li>
-                        <li style="margin-bottom: 0.5rem;"><a href="/frontend/profile.php" style="color: inherit; text-decoration: none;">Мій профіль</a></li>
+                <div class="footer-section">
+                    <h4>Для кандидатів</h4>
+                    <ul class="footer-links">
+                        <li><a href="/frontend/vacancy_list.php">Пошук вакансій</a></li>
+                        <li><a href="/frontend/companies_list.php">Компанії</a></li>
+                        <li><a href="/frontend/register.php">Створити резюме</a></li>
+                        <li><a href="#">Кар'єрні поради</a></li>
                     </ul>
                 </div>
                 
-                <div>
-                    <h4 style="color: var(--text-primary); margin-bottom: 1rem;">Для роботодавців</h4>
-                    <ul style="list-style: none; color: var(--text-secondary);">
-                        <li style="margin-bottom: 0.5rem;"><a href="/frontend/vacancy_create.php" style="color: inherit; text-decoration: none;">Розмістити вакансію</a></li>
-                        <li style="margin-bottom: 0.5rem;"><a href="/frontend/my_vacancies.php" style="color: inherit; text-decoration: none;">Мої вакансії</a></li>
-                        <li style="margin-bottom: 0.5rem;"><a href="/frontend/manage_applications.php" style="color: inherit; text-decoration: none;">Заявки</a></li>
+                <div class="footer-section">
+                    <h4>Для роботодавців</h4>
+                    <ul class="footer-links">
+                        <li><a href="/frontend/vacancy_create.php">Додати вакансію</a></li>
+                        <li><a href="/frontend/register.php">Реєстрація компанії</a></li>
+                        <li><a href="#">Пошук кандидатів</a></li>
+                        <li><a href="#">Тарифи</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Підтримка</h4>
+                    <ul class="footer-links">
+                        <li><a href="mailto:support@searchjob.com">support@searchjob.com</a></li>
+                        <li><a href="tel:+380441234567">+380 44 123 45 67</a></li>
+                        <li><a href="#">Допомога</a></li>
+                        <li><a href="#">Умови використання</a></li>
                     </ul>
                 </div>
             </div>
             
-            <div style="border-top: 1px solid var(--border-color); padding-top: 2rem; text-align: center; color: var(--text-secondary);">
-                <p>&copy; 2024 SearchJob. Усі права захищені.</p>
+            <div class="footer-bottom">
+                <p>© 2025 SearchJob. Всі права захищені.</p>
             </div>
         </div>
-    </footer>
-
-    <script>
-        // Theme Toggle
-        function toggleTheme() {
+    </footer>    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const themeToggle = document.getElementById('theme-toggle');
             const html = document.documentElement;
-            const currentTheme = html.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            const icon = themeToggle.querySelector('i');
             
-            html.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            
-            const themeIcon = document.querySelector('.theme-icon');
-            themeIcon.textContent = newTheme === 'dark' ? '☀️' : '🌙';
-        }
-
-        // Initialize theme
-        function initTheme() {
             const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
+            html.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
             
-            const themeIcon = document.querySelector('.theme-icon');
-            themeIcon.textContent = savedTheme === 'dark' ? '☀️' : '🌙';
-        }
+            themeToggle.addEventListener('click', function() {
+                const currentTheme = html.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                
+                html.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateThemeIcon(newTheme);
+                
+                const navbar = document.querySelector('.navbar');
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                
+                if (scrollTop > 100) {
+                    if (newTheme === 'dark') {
+                        navbar.style.background = 'rgba(26, 32, 44, 0.98)';
+                    } else {
+                        navbar.style.background = 'rgba(255, 255, 255, 0.98)';
+                    }
+                } else {
+                    if (newTheme === 'dark') {
+                        navbar.style.background = 'rgba(26, 32, 44, 0.95)';
+                    } else {
+                        navbar.style.background = 'rgba(255, 255, 255, 0.95)';
+                    }
+                }
+                
+                themeToggle.style.transform = 'rotate(360deg)';
+                setTimeout(() => {
+                    themeToggle.style.transform = '';
+                }, 500);
+            });
+              function updateThemeIcon(theme) {
+                if (theme === 'dark') {
+                    icon.className = 'fas fa-sun';
+                } else {
+                    icon.className = 'fas fa-moon';
+                }
+            }
 
-        // Mobile Menu Toggle
+            function enhanceForm() {
+                const textareas = document.querySelectorAll('textarea');
+                textareas.forEach(textarea => {
+                    const maxLength = textarea.getAttribute('maxlength');
+                    if (maxLength) {
+                        const counter = document.createElement('div');
+                        counter.className = 'character-counter';
+                        counter.style.cssText = 'font-size: 0.8rem; color: var(--text-secondary); text-align: right; margin-top: 0.25rem;';
+                        textarea.parentNode.appendChild(counter);
+                        
+                        function updateCounter() {
+                            const current = textarea.value.length;
+                            counter.textContent = `${current}/${maxLength}`;
+                            counter.style.color = current > maxLength * 0.9 ? '#ef4444' : 'var(--text-secondary)';
+                        }
+                        
+                        textarea.addEventListener('input', updateCounter);
+                        updateCounter();
+                    }
+                });
+
+                const phoneInput = document.getElementById('phone');
+                if (phoneInput) {
+                    phoneInput.addEventListener('input', function(e) {
+                        let value = e.target.value.replace(/\D/g, '');
+                        if (value.startsWith('38')) {
+                            value = value.substring(2);
+                        }
+                        if (value.length > 0) {
+                            if (value.length <= 3) {
+                                value = `+38 (${value}`;
+                            } else if (value.length <= 6) {
+                                value = `+38 (${value.substring(0, 3)}) ${value.substring(3)}`;
+                            } else if (value.length <= 8) {
+                                value = `+38 (${value.substring(0, 3)}) ${value.substring(3, 6)}-${value.substring(6)}`;
+                            } else {
+                                value = `+38 (${value.substring(0, 3)}) ${value.substring(3, 6)}-${value.substring(6, 8)}-${value.substring(8, 10)}`;
+                            }
+                        }
+                        e.target.value = value;
+                    });
+                }
+            }
+            
+            enhanceForm();
+            let lastScrollTop = 0;
+            let isScrolling = false;
+            
+            window.addEventListener('scroll', function() {
+                if (!isScrolling) {
+                    window.requestAnimationFrame(function() {
+                        const navbar = document.querySelector('.navbar');
+                        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                        const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+                        
+                        if (scrollTop > 100) {
+                            if (isDarkTheme) {
+                                navbar.style.background = 'rgba(26, 32, 44, 0.98)';
+                            } else {
+                                navbar.style.background = 'rgba(255, 255, 255, 0.98)';
+                            }
+                            navbar.style.boxShadow = '0 4px 30px rgba(0,0,0,0.1)';
+                            navbar.style.backdropFilter = 'blur(10px)';
+                        } else {
+                            if (isDarkTheme) {
+                                navbar.style.background = 'rgba(26, 32, 44, 0.95)';
+                            } else {
+                                navbar.style.background = 'rgba(255, 255, 255, 0.95)';
+                            }
+                            navbar.style.boxShadow = '0 2px 20px rgba(0,0,0,0.1)';
+                            navbar.style.backdropFilter = 'blur(5px)';
+                        }
+                        
+                        if (scrollTop > lastScrollTop && scrollTop > 200) {
+                            navbar.style.transform = 'translateY(-100%)';
+                        } else {
+                            navbar.style.transform = 'translateY(0)';
+                        }
+                        
+                        lastScrollTop = scrollTop;
+                        isScrolling = false;
+                    });
+                }
+                isScrolling = true;
+            });  
         function toggleMobileMenu() {
             const navMenu = document.querySelector('.nav-menu');
             navMenu.classList.toggle('active');
         }
 
-        // Form Enhancements
-        function enhanceForm() {
-            // Add character counter for textareas
-            const textareas = document.querySelectorAll('textarea');
-            textareas.forEach(textarea => {
-                const maxLength = textarea.getAttribute('maxlength');
-                if (maxLength) {
-                    const counter = document.createElement('div');
-                    counter.className = 'character-counter';
-                    counter.style.cssText = 'font-size: 0.8rem; color: var(--text-secondary); text-align: right; margin-top: 0.25rem;';
-                    textarea.parentNode.appendChild(counter);
-                    
-                    function updateCounter() {
-                        const current = textarea.value.length;
-                        counter.textContent = `${current}/${maxLength}`;
-                        counter.style.color = current > maxLength * 0.9 ? '#ef4444' : 'var(--text-secondary)';
-                    }
-                    
-                    textarea.addEventListener('input', updateCounter);
-                    updateCounter();
-                }
-            });
-
-            // Phone number formatting
-            const phoneInput = document.getElementById('phone');
-            if (phoneInput) {
-                phoneInput.addEventListener('input', function(e) {
-                    let value = e.target.value.replace(/\D/g, '');
-                    if (value.startsWith('38')) {
-                        value = value.substring(2);
-                    }
-                    if (value.length > 0) {
-                        if (value.length <= 3) {
-                            value = `+38 (${value}`;
-                        } else if (value.length <= 6) {
-                            value = `+38 (${value.substring(0, 3)}) ${value.substring(3)}`;
-                        } else if (value.length <= 8) {
-                            value = `+38 (${value.substring(0, 3)}) ${value.substring(3, 6)}-${value.substring(6)}`;
-                        } else {
-                            value = `+38 (${value.substring(0, 3)}) ${value.substring(3, 6)}-${value.substring(6, 8)}-${value.substring(8, 10)}`;
-                        }
-                    }
-                    e.target.value = value;
-                });
-            }
-        }
-
-        // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
-            initTheme();
-            enhanceForm();
-            
-            // Close mobile menu when clicking outside
             document.addEventListener('click', function(event) {
                 const navMenu = document.querySelector('.nav-menu');
                 const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
                 
-                if (!navMenu.contains(event.target) && !mobileMenuBtn.contains(event.target)) {
+                if (navMenu && mobileMenuBtn && !navMenu.contains(event.target) && !mobileMenuBtn.contains(event.target)) {
                     navMenu.classList.remove('active');
                 }
             });
 
-            // Auto-save form data to localStorage
             const form = document.querySelector('.edit-form');
-            const inputs = form.querySelectorAll('input, textarea, select');
-            
-            inputs.forEach(input => {
-                // Load saved data
-                const savedValue = localStorage.getItem(`form_${input.name}`);
-                if (savedValue && !input.value) {
-                    input.value = savedValue;
-                }
+            if (form) {
+                const inputs = form.querySelectorAll('input, textarea, select');
                 
-                // Save on change
-                input.addEventListener('change', function() {
-                    localStorage.setItem(`form_${input.name}`, input.value);
-                });
-            });
-
-            // Clear saved data on successful submit
-            form.addEventListener('submit', function() {
                 inputs.forEach(input => {
-                    localStorage.removeItem(`form_${input.name}`);
+                    const savedValue = localStorage.getItem(`form_${input.name}`);
+                    if (savedValue && !input.value) {
+                        input.value = savedValue;
+                    }
+                    input.addEventListener('change', function() {
+                        localStorage.setItem(`form_${input.name}`, input.value);
+                    });
+                });        
+                form.addEventListener('submit', function() {
+                    inputs.forEach(input => {
+                        localStorage.removeItem(`form_${input.name}`);
+                    });
                 });
-            });
+            }
+        });
+        
         });
     </script>
 </body>

@@ -1,5 +1,5 @@
 <?php
-// View: отображение профиля пользователя
+require_once __DIR__ . '/../../backend/utils/AvatarHelper.php';
 ?><!DOCTYPE html>
 <html lang="uk">
 <head>
@@ -10,12 +10,12 @@
     <link rel="stylesheet" href="assets/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     
+    <?= AvatarHelper::getAvatarCSS() ?>
+    
     <style>
-        /* Professional Modern Styles */
         :root {
             --primary-color: #eaa850;
             --primary-dark: #d4922a;
@@ -46,7 +46,7 @@
             padding: 0;
             box-sizing: border-box;
         }        body {
-            background-color: var(--background-primary); /* Заменено на переменную */
+            background-color: var(--background-primary); 
             color: var(--text-primary);
             font-family: 'Inter', sans-serif;
             line-height: 1.6;
@@ -55,15 +55,15 @@
         }
 
         body[data-theme="dark"] {
-            background-color: var(--dark-bg-primary); /* Заменено на переменную */
+            background-color: var(--dark-bg-primary); 
             color: var(--dark-text-primary);
         }
 
         .navbar {
-            background: rgba(255, 255, 255, 0.95); /* Приведено к стандарту */
-            backdrop-filter: blur(10px); /* Приведено к стандарту */
-            border-bottom: none; /* Убрана граница */
-            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1); /* Приведено к стандарту */
+            background: rgba(255, 255, 255, 0.95); 
+            backdrop-filter: blur(10px); 
+            border-bottom: none; 
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1); 
             position: fixed;
             top: 0;
             width: 100%;
@@ -72,14 +72,14 @@
         }
 
         body[data-theme="dark"] .navbar {
-            background: var(--dark-nav-bg); /* Приведено к стандарту */
+            background: var(--dark-nav-bg); 
             box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
         }
 
         .nav-container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 1rem 2rem; /* Приведено к стандарту */
+            padding: 1rem 2rem; 
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -239,9 +239,7 @@
             padding: 2rem 0;
             border-bottom: 1px solid var(--border-color);
             margin-bottom: 2rem;
-        }
-
-        .profile-avatar {
+        }        .profile-avatar {
             width: 120px;
             height: 120px;
             border-radius: 50%;
@@ -249,12 +247,19 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            margin: 0 auto 1rem;
             font-size: 2.5rem;
             font-weight: 800;
             color: white;
-            margin: 0 auto 1rem auto;
+            border: 4px solid var(--border-color);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+          .profile-avatar:hover {
+            transform: scale(1.05);
+            border-color: var(--primary-color);
             box-shadow: 0 8px 25px rgba(234, 168, 80, 0.3);
-            animation: zoomIn 0.6s ease-out 0.3s both;
         }
 
         .profile-name {
@@ -500,9 +505,60 @@
                 grid-template-columns: 1fr;
             }
 
-            .container {
-                padding: 1rem;
+            .container {            padding: 1rem;
             }
+        }
+
+        /* Footer Styles */
+        .footer {
+            background: #1a202c;
+            color: white;
+            padding: 60px 0 30px;
+        }
+        
+        .footer-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+        
+        .footer-section h4 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: #eaa850;
+        }
+        
+        .footer-links {
+            list-style: none;
+        }
+        
+        .footer-links li {
+            margin-bottom: 0.75rem;
+        }
+        
+        .footer-links a {
+            color: #a0aec0;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .footer-links a:hover {
+            color: #eaa850;
+        }
+        
+        .footer-bottom {
+            border-top: 1px solid #2d3748;
+            padding-top: 2rem;
+            text-align: center;
+            color: #a0aec0;
+        }
+        
+        .section-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
         }
     </style>
 </head>
@@ -546,12 +602,20 @@
                     <i class="fas fa-user-circle" style="color: var(--primary-color);"></i>
                     Профіль користувача
                 </h1>
-            </div>
-              <?php if ($profile): ?>
-                <div class="profile-card">
-                    <div class="profile-header">
-                        <div class="profile-avatar">
-                            <?= strtoupper(substr($profile['login'] ?? '', 0, 2)) ?>
+            </div>              <?php if ($profile): ?>
+                <!-- Debug info for avatar -->
+                <?php 
+                $profileArray = is_object($profile) ? (array) $profile : $profile;
+                if (isset($profileArray['avatar'])) {
+                    echo "<!-- Debug: Avatar path = " . htmlspecialchars($profileArray['avatar']) . " -->";
+                } else {
+                    echo "<!-- Debug: No avatar field found -->";
+                }
+                ?>
+                
+                <div class="profile-card">                    <div class="profile-header">
+                        <div style="display: flex; justify-content: center; margin-bottom: 1rem;">
+                            <?= AvatarHelper::renderAvatar($profileArray, 'xlarge', 'profile-main-avatar') ?>
                         </div>
                         <h2 class="profile-name"><?= htmlspecialchars($profile['login'] ?? '') ?></h2>
                         <div class="role-badge">
@@ -660,17 +724,14 @@
                         <?php endif; ?>
                         
                         <!-- Поля для роботодавців -->
-                        <?php if (($profile['role'] ?? '') == 'employer'): ?>
-                            <?php if (!empty($profile['company_name'])): ?>
+                        <?php if (($profile['role'] ?? '') == 'employer'): ?>                            <?php if (!empty($profile['company_name'])): ?>
                             <div class="info-item">
                                 <div class="info-label">
                                     <i class="fas fa-building"></i> Компанія
                                 </div>
                                 <div class="info-value"><?= htmlspecialchars($profile['company_name']) ?></div>
                             </div>
-                            <?php endif; ?>
-                            
-                            <?php if (!empty($profile['company_description'])): ?>
+                            <?php endif; ?>                            <?php if (!empty($profile['company_description'])): ?>
                             <div class="info-item" style="grid-column: 1 / -1;">
                                 <div class="info-label">
                                     <i class="fas fa-file-alt"></i> Опис компанії
@@ -749,10 +810,14 @@
                                 <h4><i class="fas fa-user-edit"></i> Редагувати профіль</h4>
                                 <p>Змінити особисті дані профілю</p>
                             </a>
-                            
-                            <a href="edit_profile.php?type=company" class="action-card">
+                              <a href="edit_profile.php?type=company" class="action-card">
                                 <h4><i class="fas fa-building"></i> Редагувати компанію</h4>
                                 <p>Змінити інформацію про компанію</p>
+                            </a>
+                            
+                            <a href="/frontend/account_settings.php" class="action-card">
+                                <h4><i class="fas fa-shield-alt"></i> Налаштування акаунту</h4>
+                                <p>Змінити email та пароль</p>
                             </a>
                         <?php else: ?>
                             <a href="/frontend/vacancy_list.php" class="action-card">
@@ -764,10 +829,14 @@
                                 <h4><i class="fas fa-paper-plane"></i> Мої відгуки</h4>
                                 <p>Переглядайте свої відгуки на вакансії</p>
                             </a>
-                            
-                            <a href="/frontend/edit_profile.php" class="action-card">
+                              <a href="/frontend/edit_profile.php" class="action-card">
                                 <h4><i class="fas fa-cog"></i> Редагувати профіль</h4>
                                 <p>Змінити дані профілю</p>
+                            </a>
+                            
+                            <a href="/frontend/account_settings.php" class="action-card">
+                                <h4><i class="fas fa-shield-alt"></i> Налаштування акаунту</h4>
+                                <p>Змінити email та пароль</p>
                             </a>
                         <?php endif; ?>
                     </div>
@@ -777,12 +846,72 @@
                     <h3><i class="fas fa-exclamation-triangle"></i> Профіль не знайдено</h3>
                     <p>Не вдалося завантажити дані профілю.</p>
                 </div>
-            <?php endif; ?>
-        </div>
+            <?php endif; ?>        </div>
     </main>
 
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="section-container">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <h4>SearchJob</h4>
+                    <p style="color: #a0aec0; margin-bottom: 1.5rem;">
+                        Провідна платформа для пошуку роботи в Україні
+                    </p>
+                    <div style="display: flex; gap: 1rem;">
+                        <a href="#" style="color: #eaa850; font-size: 1.25rem;">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" style="color: #eaa850; font-size: 1.25rem;">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                        <a href="#" style="color: #eaa850; font-size: 1.25rem;">
+                            <i class="fab fa-telegram-plane"></i>
+                        </a>
+                        <a href="#" style="color: #eaa850; font-size: 1.25rem;">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Для кандидатів</h4>
+                    <ul class="footer-links">
+                        <li><a href="/frontend/vacancy_list.php">Пошук вакансій</a></li>
+                        <li><a href="/frontend/companies_list.php">Компанії</a></li>
+                        <li><a href="/frontend/register.php">Створити резюме</a></li>
+                        <li><a href="#">Кар'єрні поради</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Для роботодавців</h4>
+                    <ul class="footer-links">
+                        <li><a href="/frontend/vacancy_create.php">Додати вакансію</a></li>
+                        <li><a href="/frontend/register.php">Реєстрація компанії</a></li>
+                        <li><a href="#">Пошук кандидатів</a></li>
+                        <li><a href="#">Тарифи</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Підтримка</h4>
+                    <ul class="footer-links">
+                        <li><a href="mailto:support@searchjob.com">support@searchjob.com</a></li>
+                        <li><a href="tel:+380441234567">+380 44 123 45 67</a></li>
+                        <li><a href="#">Допомога</a></li>
+                        <li><a href="#">Умови використання</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>© 2025 SearchJob. Всі права захищені.</p>
+            </div>
+        </div>
+    </footer>
+
     <script>
-        // Theme Toggle
         function toggleTheme() {
             const body = document.body;
             const currentTheme = body.getAttribute('data-theme');
@@ -794,15 +923,13 @@
             const themeIcon = document.querySelector('.theme-toggle i');
             themeIcon.className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
         }
-
-        // Load saved theme
         document.addEventListener('DOMContentLoaded', function() {
             const savedTheme = localStorage.getItem('theme') || 'light';
             document.body.setAttribute('data-theme', savedTheme);
             
             const themeIcon = document.querySelector('.theme-toggle i');
             themeIcon.className = savedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
-        });        // Smooth animations on scroll
+        });  
         const observerOptions = {
             threshold: 0.1,
             rootMargin: '0px 0px -50px 0px'
@@ -818,15 +945,12 @@
         }, observerOptions);
 
         document.addEventListener('DOMContentLoaded', function() {
-            // Observe cards for scroll animations
             const cards = document.querySelectorAll('.action-card, .info-item');
             cards.forEach((card, index) => {
                 card.style.opacity = '0';
                 card.style.animationDelay = `${index * 0.1}s`;
                 observer.observe(card);
             });
-
-            // Enhanced hover effects for action cards
             document.querySelectorAll('.action-card').forEach(card => {
                 card.addEventListener('mouseenter', function() {
                     this.style.transform = 'translateY(-8px) scale(1.02)';
